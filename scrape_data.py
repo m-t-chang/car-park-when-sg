@@ -5,16 +5,14 @@ import time
 import os
 import dotenv
 
-# environment variables
+# environment variables and constants
 dotenv.load_dotenv()
 LTA_ACCOUNT_KEY = os.environ.get("LTA_ACCOUNT_KEY")
-
-# other constants
+MONGODB_URI = os.environ.get("MONGODB_URI")
 API_URL = "http://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2"
 
 if __name__ == '__main__':
     # connect to MongoDB
-    MONGODB_URI = "mongodb://localhost:27017"
     client = MongoClient(MONGODB_URI)
     db = client.car_park_when_sg
 
