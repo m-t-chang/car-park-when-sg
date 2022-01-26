@@ -7,3 +7,7 @@
 
 -i https://pypi.org/simple
 
+
+requests~=2.27.1
+python-dotenv~=0.19.2
+pymongo~=4.0.1
