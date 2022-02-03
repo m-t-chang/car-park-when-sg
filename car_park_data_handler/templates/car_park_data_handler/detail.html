@@ -6,10 +6,13 @@
 </head>
 <body>
 <h1>{{ car_park_id }}</h1>
+<a href="/data">Back</a>
+<h2>All Car Park Data:</h2>
 <ul>
     {% for measurement in list_of_data %}
     <li>{{ measurement }}</li>
     {% endfor %}
 </ul>
+
 </body>
 </html>
