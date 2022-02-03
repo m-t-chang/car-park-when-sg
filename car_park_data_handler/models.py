@@ -18,9 +18,12 @@ class Carpark(models.Model):
 
 
 class Measurement(models.Model):
-    car_park_id = models.ForeignKey(Carpark, on_delete=models.DO_NOTHING, primary_key=True)
-    timestamp = models.DateTimeField(primary_key=True)
+    car_park_id = models.ForeignKey(Carpark, on_delete=models.DO_NOTHING)
+    timestamp = models.DateTimeField()
     available_lots = models.PositiveSmallIntegerField()
+    constraints = [
+        models.UniqueConstraint(fields=['car_park_id', 'timestamp'], name='unique timestamp and car park ID')
+    ]
 
     def __str__(self):
         return self.car_park_id + " at " + self.timestamp

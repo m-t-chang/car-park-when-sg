@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from django.http import HttpResponse
 
-# Create your views here.
+
+def index(request):
+    # members = Members.objects.all()[1:20]  # example of slicing
+    # output = ', '.join([member.name for member in members])
+    # return HttpResponse(output)
+    return HttpResponse('hello world')
