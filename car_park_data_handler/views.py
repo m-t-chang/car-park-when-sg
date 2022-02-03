@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import render
 from . import mongodb_interface
 
@@ -19,3 +20,8 @@ def detail(request, car_park_id):
     context = {"car_park_id": car_park_id, "list_of_data": data}
     return render(request, 'car_park_data_handler/detail.html', context)
     # return HttpResponse(f'You looked for car park ID: {car_park_id}')
+
+
+def scrape(request):
+    """make 1 run of the data scraper"""
+    return JsonResponse({'message': 'You''ve reached the placeholder for the data scraping endpoint.'})

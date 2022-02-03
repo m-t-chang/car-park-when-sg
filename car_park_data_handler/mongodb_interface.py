@@ -23,6 +23,7 @@ def get_car_park_details(car_park_id):
         # dt_object = datetime.fromtimestamp(doc['timestamp'])
         # pprint(dt_object)
 
+        lot_to_save = {}
         for lot in doc["data"]:
             if lot['CarParkID'] == car_park_id:
                 lot_to_save = lot

@@ -25,15 +25,69 @@ if __name__ == '__main__':
     #
     # I got MongoDB working!
 
-    # call the api
-    print("Calling API...")
-    request_time = int(time.time())
-    response = requests.get(API_URL, headers={"AccountKey": LTA_ACCOUNT_KEY})
-    print("API response status code: ", response.status_code)
+    ######### NEW
 
-    # only proceed if response is successful
-    if response.status_code == 200:
-        api_data = response.json()["value"]
+    rowsRemainingFlag = true;
+    skipRows = 0;
+    while rowsRemainingFlag:
+        # DEBUG
+        print(f'skip rows = {skipRows}')
+
+        # call API
+        request_time = int(time.time())
+        print(f'Calling API at {API_URL}?$skip={skipRows}')
+        response = requests.get(f'{API_URL}?$skip={skipRows}', headers={"AccountKey": LTA_ACCOUNT_KEY})
+        print("API response status code: ", response.status_code)
+
+        # only proceed if response is successful
+        if response.status_code == 200:
+            api_data = response.json()["value"]
+
+            # if we got data, then save it. Otherwise, stop the loop
+            print(f"rows in response: {len(api_data)}")
+
+            # wrap the result
+            doc_to_insert = {"timestamp": request_time, "data": api_data}
+
+            # save to db and check result
+            result = db.api_responses.insert_one(doc_to_insert)
+            pprint(result)
+
+        if (dataJson.value.length === 0) {
+        rowsRemainingFlag = false;
+        } else {
+        // parse the response (an array): push
+        the
+        500
+        onto
+        storage
+        dataset.data.push(...
+        dataJson.value);
+
+        // set
+        the
+        skip
+        parameter
+        to
+        get
+        next
+        500
+        rows
+        skipRows += 500;
+        }
+        }
+
+        ######### END NEW
+
+        # call the api
+        print("Calling API...")
+        request_time = int(time.time())
+        response = requests.get(API_URL, headers={"AccountKey": LTA_ACCOUNT_KEY})
+        print("API response status code: ", response.status_code)
+
+        # only proceed if response is successful
+        if response.status_code == 200:
+            api_data = response.json()["value"]
         # pprint(api_data[1])  # view one object in the response
 
         print(request_time)
