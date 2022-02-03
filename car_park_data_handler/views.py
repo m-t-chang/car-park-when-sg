@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from django.shortcuts import render
+from . import mongodb_interface
 
 
 def index(request):
@@ -14,4 +15,7 @@ def index(request):
 
 def detail(request, car_park_id):
     # return the time series for 1 car park
-    return HttpResponse(f'You looked for car park ID: {car_park_id}')
+    data = mongodb_interface.get_car_park_details(car_park_id=car_park_id)
+    context = {"car_park_id": car_park_id, "list_of_data": data}
+    return render(request, 'car_park_data_handler/detail.html', context)
+    # return HttpResponse(f'You looked for car park ID: {car_park_id}')
