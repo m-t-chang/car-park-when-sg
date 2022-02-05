@@ -11,7 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import CarparkSerializer, CarparkDataSerializer
 from .models import Carpark, CarparkData
 
-from pprint import pprint
+import logging
+
 import requests
 import time
 import datetime
@@ -19,6 +20,9 @@ import datetime
 # environment variables and constants
 import os
 import dotenv
+
+# set up logger
+logger = logging.getLogger(__name__)
 
 dotenv.load_dotenv()
 LTA_ACCOUNT_KEY = os.environ.get("LTA_ACCOUNT_KEY")
@@ -55,21 +59,22 @@ def scrape(request):
     if request.method != "POST":
         return JsonResponse({'message': 'Endpoint accessed incorrectly.'})
 
+    logger.info('Starting data scraper')
+
     for skip_rows in range(0, 10000, 500):
         # used a for loop to prevent infinite loops, and also elegantly iterate the skip_rows variable
 
         # call API
         request_time = int(time.time())
-        print(f'Calling {API_URL}?$skip={skip_rows}')
+        logger.info(f'Calling {API_URL}?$skip={skip_rows}')
         response = requests.get(f'{API_URL}?$skip={skip_rows}', headers={"AccountKey": LTA_ACCOUNT_KEY})
-        print("API response status code: ", response.status_code)
 
         # only proceed if response is successful
         if response.status_code == 200:
             api_data = response.json()["value"]
 
             # if we got data, then save it. Otherwise, stop the loop
-            print(f"rows in response: {len(api_data)}")
+            logger.debug(f"rows in response: {len(api_data)}")
 
             if len(api_data) == 0:
                 rows_remaining_flag = False
@@ -98,24 +103,23 @@ def scrape(request):
                     carpark_db.pop('_state')  # remove extra things that the Model has
                     # Compare differences
                     if carpark_dict != carpark_db:
-                        pprint("There is something different!")
-                        pprint("Database version:")
-                        pprint(carpark_db)
-                        pprint("API version:")
-                        pprint(carpark_dict)
+                        logger.error(
+                            "New carpark data from API is different from database! Please take action to resolve.")
+                        logger.debug("Database version:")
+                        logger.debug(carpark_db)
+                        logger.debug("API version:")
+                        logger.debug(carpark_dict)
                 except Carpark.DoesNotExist:
-                    print(f"Carpark ID {carpark_id(carpark)} not found, adding it to DB.")
+                    logger.warning(f"Carpark ID {carpark_id(carpark)} not found, adding it to DB.")
 
                     # try to save the Carpark object
                     serializer = CarparkSerializer(data=carpark_dict)
                     if serializer.is_valid():
                         serializer.save()
                     else:
-                        pprint(carpark)
-                        pprint(carpark_dict)
-                        pprint("Error with creating")
-                        pprint(serializer.errors)
-                        # return JsonResponse({'message': 'Some Error'})
+                        logger.error(f"Error with saving Carpark to database. Serializer error: {serializer.errors}")
+                        logger.debug(carpark)
+                        logger.debug(carpark_dict)
 
                 # make the carparkData dict
                 carpark_data_dict = {
@@ -128,10 +132,12 @@ def scrape(request):
                 if serializer.is_valid():
                     serializer.save()
                 else:
-                    pprint(carpark)
-                    pprint(carpark_data_dict)
-                    pprint("Error with creating")
-                    pprint(serializer.errors)
-                    # return JsonResponse({'message': 'Some Error'})
+                    logger.error(f"Error with saving CarparkData to database. Serializer error: {serializer.errors}")
+                    logger.debug(carpark)
+                    logger.debug(carpark_dict)
+        else:
+            logger.error(f"API was not reached. Status code: {response.status_code}")
+
+    logger.info("Data scraping complete")
 
     return JsonResponse({'message': 'You have reached the data scraper endpoint.'})

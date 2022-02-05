@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 import os
 import dotenv
+import sys
+import logging
 
 # environment variables and constants
 dotenv.load_dotenv()
@@ -125,3 +127,27 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    'version': 1,  # the dictConfig format version
+    'disable_existing_loggers': False,  # retain the default loggers
+    'formatters': {
+        'verbose': {
+            'format': '{name} {levelname}:{message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'basic': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'verbose'
+        }
+    },
+    'loggers': {
+        '': {
+            'level': 'DEBUG',
+            'handlers': ['basic'],
+        }
+    }
+}
