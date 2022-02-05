@@ -9,6 +9,7 @@ python-dotenv = "*"
 pymongo = {extras = ["srv"], version = "*"}
 django = "*"
 psycopg2-binary = "*"
+djangorestframework = "*"
 
 [dev-packages]
 

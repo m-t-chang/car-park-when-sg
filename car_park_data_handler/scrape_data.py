@@ -5,6 +5,9 @@ import time
 import os
 import dotenv
 
+# from car_park_data_handler.serializers import CarparkSerializer, CarparkDataSerializer
+# from car_park_data_handler.models import Carpark, CarparkData
+
 # environment variables and constants
 dotenv.load_dotenv()
 LTA_ACCOUNT_KEY = os.environ.get("LTA_ACCOUNT_KEY")
@@ -51,6 +54,23 @@ if __name__ == '__main__':
             else:
                 # OK we got data. Let's transform it and put it in the DB.
                 # LEFT OFF HERE
+
+                for carpark in api_data:
+                    pprint(carpark)
+
+                # #### CODE FROM CLASS
+                # serializer = CarparkSerializer(data=api_data[0])
+                #
+                # # without the .is_valid, then django will throw an error of "you did not check if serializer is valid before saving"
+                # if serializer.is_valid():
+                #     serializer.save()
+                #
+                #     return Response(serializer.data)
+                #
+                # else:
+                #     return Response('Error with creating')
+
+                ## END CODE FROM CLASS
 
                 # wrap the result
                 doc_to_insert = {"timestamp": request_time, "data": api_data}

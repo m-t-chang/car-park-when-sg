@@ -5,7 +5,7 @@ from django.db import models
 
 class Carpark(models.Model):
     car_park_id = models.CharField(max_length=10)
-    area = models.CharField(max_length=100)
+    area = models.CharField(max_length=100, null=True, blank=True)
     development = models.CharField(
         max_length=100)  # this is the human-readable name of parking lot, but does not exist for all
     location_lat = models.FloatField()
