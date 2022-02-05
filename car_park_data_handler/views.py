@@ -13,6 +13,7 @@ from .models import Carpark, CarparkData
 from pprint import pprint
 import requests
 import time
+import datetime
 
 # environment variables and constants
 import os
@@ -74,6 +75,7 @@ def scrape(request):
                     # make the carpark dict
                     loc_str = carpark["Location"].split()
                     carpark_dict = {
+                        "id": f'{carpark["CarParkID"]}-{carpark["LotType"]}',
                         "car_park_id": carpark["CarParkID"],
                         "area": carpark["Area"],
                         "development": carpark["Development"],
@@ -83,8 +85,7 @@ def scrape(request):
                         "agency": carpark["Agency"]
                     }
 
-                    # make the carparkData dict
-
+                    # try to save the Carpark object
                     serializer = CarparkSerializer(data=carpark_dict)
                     if serializer.is_valid():
                         serializer.save()
@@ -94,31 +95,48 @@ def scrape(request):
                         pprint("Error with creating")
 
                         pprint(serializer.errors)
-                        return JsonResponse({'message': 'Some Error'})
+                        # return JsonResponse({'message': 'Some Error'})
 
-                # #### CODE FROM CLASS
-                # serializer = CarparkSerializer(data=api_data[0])
-                #
-                # # without the .is_valid, then django will throw an error of "you did not check if serializer is valid before saving"
-                # if serializer.is_valid():
-                #     serializer.save()
-                #
-                #     return Response(serializer.data)
-                #
-                # else:
-                #     return Response('Error with creating')
+                    # make the carparkData dict
+                    carpark_data_dict = {
+                        "carpark_id": f'{carpark["CarParkID"]}-{carpark["LotType"]}',
+                        "available_lots": carpark["AvailableLots"],
+                        "timestamp": datetime.datetime.utcfromtimestamp(request_time)
+                    }
 
-                ## END CODE FROM CLASS
+                    serializer = CarparkDataSerializer(data=carpark_data_dict)
+                    if serializer.is_valid():
+                        serializer.save()
+                    else:
+                        pprint(carpark)
+                        pprint(carpark_data_dict)
+                        pprint("Error with creating")
+                        pprint(serializer.errors)
+                        # return JsonResponse({'message': 'Some Error'})
 
-                # wrap the result
-                doc_to_insert = {"timestamp": request_time, "data": api_data}
+            # #### CODE FROM CLASS
+            # serializer = CarparkSerializer(data=api_data[0])
+            #
+            # # without the .is_valid, then django will throw an error of "you did not check if serializer is valid before saving"
+            # if serializer.is_valid():
+            #     serializer.save()
+            #
+            #     return Response(serializer.data)
+            #
+            # else:
+            #     return Response('Error with creating')
 
-                # save to db and check result
-                ## DONT INSERT FOR NOW
-                # result = db.api_responses.insert_one(doc_to_insert)
-                # pprint(result)
+            ## END CODE FROM CLASS
 
-                # set the skip parameter to get the next 500 rows
-                skip_rows += 500
+            # wrap the result
+            doc_to_insert = {"timestamp": request_time, "data": api_data}
+
+            # save to db and check result
+            ## DONT INSERT FOR NOW
+            # result = db.api_responses.insert_one(doc_to_insert)
+            # pprint(result)
+
+            # set the skip parameter to get the next 500 rows
+            skip_rows += 500
 
     return JsonResponse({'message': 'You''ve reached the placeholder for the data scraping endpoint.'})

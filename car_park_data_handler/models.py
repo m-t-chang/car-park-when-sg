@@ -4,6 +4,7 @@ from django.db import models
 # Create your models here.
 
 class Carpark(models.Model):
+    id = models.CharField(max_length=11, primary_key=True)
     car_park_id = models.CharField(max_length=10)
     area = models.CharField(max_length=100, null=True, blank=True)
     development = models.CharField(
@@ -18,7 +19,7 @@ class Carpark(models.Model):
 
 
 class CarparkData(models.Model):
-    carpark_id = models.ForeignKey(Carpark, on_delete=models.DO_NOTHING)
+    carpark_id = models.ForeignKey(Carpark, on_delete=models.DO_NOTHING, db_column="carpark_id")
     timestamp = models.DateTimeField()
     available_lots = models.PositiveSmallIntegerField()
     constraints = [
