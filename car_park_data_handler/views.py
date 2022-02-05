@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render
 from . import mongodb_interface
+from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -47,20 +48,19 @@ def detail(request, car_park_id):
     # return HttpResponse(f'You looked for car park ID: {car_park_id}')
 
 
+@csrf_exempt
 def scrape(request):
     """make 1 run of the data scraper"""
 
-    # first, pull the existing carpark data
+    if request.method != "POST":
+        return JsonResponse({'message': 'Endpoint accessed incorrectly.'})
 
-    rows_remaining_flag = True
-    skip_rows = 0
-    while rows_remaining_flag:
-        # DEBUG
-        print(f'skip rows = {skip_rows}')
+    for skip_rows in range(0, 10000, 500):
+        # used a for loop to prevent infinite loops, and also elegantly iterate the skip_rows variable
 
         # call API
         request_time = int(time.time())
-        print(f'Calling API at {API_URL}?$skip={skip_rows}')
+        print(f'Calling {API_URL}?$skip={skip_rows}')
         response = requests.get(f'{API_URL}?$skip={skip_rows}', headers={"AccountKey": LTA_ACCOUNT_KEY})
         print("API response status code: ", response.status_code)
 
@@ -73,90 +73,65 @@ def scrape(request):
 
             if len(api_data) == 0:
                 rows_remaining_flag = False
-            else:
-                # OK we got data. Let's transform it and put it in the DB.
-                # LEFT OFF HERE
+                break
 
-                for carpark in api_data:
-                    # make the carpark dict
-                    loc_str = carpark["Location"].split()
-                    carpark_dict = {
-                        "id": carpark_id(carpark),
-                        "car_park_id": carpark["CarParkID"],
-                        "area": carpark["Area"],
-                        "development": carpark["Development"],
-                        "location_lat": float(loc_str[0]),
-                        "location_lon": float(loc_str[1]),
-                        "lot_type": carpark["LotType"],
-                        "agency": carpark["Agency"]
-                    }
+            # OK we got data. Let's transform it and put it in the DB.
 
-                    # add the carpark to the db if it is new
-                    try:
-                        # get the matching one from DB, if it exists.
-                        carpark_db = Carpark.objects.get(id=carpark_id(carpark)).__dict__
-                        carpark_db.pop('_state')  # remove extra things that the Model has
-                        # Compare differences
-                        if carpark_dict != carpark_db:
-                            pprint("There is something different!")
-                            pprint("Database version:")
-                            pprint(carpark_db)
-                            pprint("API version:")
-                            pprint(carpark_dict)
-                    except Carpark.DoesNotExist:
-                        print(f"Carpark ID {carpark_id(carpark)} not found, adding it to DB.")
+            for carpark in api_data:
+                # make the carpark dict
+                loc_str = carpark["Location"].split()
+                carpark_dict = {
+                    "id": carpark_id(carpark),
+                    "car_park_id": carpark["CarParkID"],
+                    "area": carpark["Area"],
+                    "development": carpark["Development"],
+                    "location_lat": float(loc_str[0]),
+                    "location_lon": float(loc_str[1]),
+                    "lot_type": carpark["LotType"],
+                    "agency": carpark["Agency"]
+                }
 
-                        # try to save the Carpark object
-                        serializer = CarparkSerializer(data=carpark_dict)
-                        if serializer.is_valid():
-                            serializer.save()
-                        else:
-                            pprint(carpark)
-                            pprint(carpark_dict)
-                            pprint("Error with creating")
-                            pprint(serializer.errors)
-                            # return JsonResponse({'message': 'Some Error'})
+                # add the carpark to the db if it is new
+                try:
+                    # get the matching one from DB, if it exists.
+                    carpark_db = Carpark.objects.get(id=carpark_id(carpark)).__dict__
+                    carpark_db.pop('_state')  # remove extra things that the Model has
+                    # Compare differences
+                    if carpark_dict != carpark_db:
+                        pprint("There is something different!")
+                        pprint("Database version:")
+                        pprint(carpark_db)
+                        pprint("API version:")
+                        pprint(carpark_dict)
+                except Carpark.DoesNotExist:
+                    print(f"Carpark ID {carpark_id(carpark)} not found, adding it to DB.")
 
-                    # make the carparkData dict
-                    carpark_data_dict = {
-                        "carpark_id": carpark_id(carpark),
-                        "available_lots": carpark["AvailableLots"],
-                        "timestamp": datetime.datetime.utcfromtimestamp(request_time)
-                    }
-
-                    serializer = CarparkDataSerializer(data=carpark_data_dict)
+                    # try to save the Carpark object
+                    serializer = CarparkSerializer(data=carpark_dict)
                     if serializer.is_valid():
                         serializer.save()
                     else:
                         pprint(carpark)
-                        pprint(carpark_data_dict)
+                        pprint(carpark_dict)
                         pprint("Error with creating")
                         pprint(serializer.errors)
                         # return JsonResponse({'message': 'Some Error'})
 
-        # #### CODE FROM CLASS
-        # serializer = CarparkSerializer(data=api_data[0])
-        #
-        # # without the .is_valid, then django will throw an error of "you did not check if serializer is valid before saving"
-        # if serializer.is_valid():
-        #     serializer.save()
-        #
-        #     return Response(serializer.data)
-        #
-        # else:
-        #     return Response('Error with creating')
+                # make the carparkData dict
+                carpark_data_dict = {
+                    "carpark_id": carpark_id(carpark),
+                    "available_lots": carpark["AvailableLots"],
+                    "timestamp": datetime.datetime.utcfromtimestamp(request_time)
+                }
 
-        ## END CODE FROM CLASS
+                serializer = CarparkDataSerializer(data=carpark_data_dict)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    pprint(carpark)
+                    pprint(carpark_data_dict)
+                    pprint("Error with creating")
+                    pprint(serializer.errors)
+                    # return JsonResponse({'message': 'Some Error'})
 
-        # wrap the result
-        doc_to_insert = {"timestamp": request_time, "data": api_data}
-
-        # save to db and check result
-        ## DONT INSERT FOR NOW
-        # result = db.api_responses.insert_one(doc_to_insert)
-        # pprint(result)
-
-        # set the skip parameter to get the next 500 rows
-        skip_rows += 500
-
-    return JsonResponse({'message': 'You''ve reached the placeholder for the data scraping endpoint.'})
+    return JsonResponse({'message': 'You have reached the data scraper endpoint.'})
