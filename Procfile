@@ -1,1 +1,1 @@
-worker: python scrape_data.py
+web: gunicorn django_project.wsgi
