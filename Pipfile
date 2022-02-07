@@ -12,6 +12,7 @@ psycopg2-binary = "*"
 djangorestframework = "*"
 gunicorn = "*"
 django-heroku = "*"
+djangorestframework-simplejwt = "*"
 
 [dev-packages]
 
