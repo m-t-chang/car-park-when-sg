@@ -22,7 +22,7 @@ class Carpark(models.Model):
 class CarparkData(models.Model):
     carpark_id = models.ForeignKey(Carpark, on_delete=models.DO_NOTHING, db_column="carpark_id")
     timestamp = models.DateTimeField()
-    available_lots = models.PositiveSmallIntegerField()
+    available_lots = models.SmallIntegerField()
     constraints = [
         models.UniqueConstraint(fields=['car_park_id', 'timestamp'], name='unique timestamp and car park ID')
     ]

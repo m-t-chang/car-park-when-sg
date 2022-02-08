@@ -17,6 +17,10 @@ import requests
 import time
 import datetime
 
+from pymongo import MongoClient
+from django.db import connection
+from django.db import transaction
+
 # environment variables and constants
 import os
 import dotenv
@@ -26,10 +30,11 @@ logger = logging.getLogger(__name__)
 
 dotenv.load_dotenv()
 LTA_ACCOUNT_KEY = os.environ.get("LTA_ACCOUNT_KEY")
+MONGODB_URI = os.environ.get("MONGODB_URI")
 API_URL = "http://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2"
 
 
-def carpark_id(cp):
+def make_carpark_id(cp):
     """input = dict of carpark, in the API format. output = string to be used in DB as its ID"""
     return f'{cp["CarParkID"]}-{cp["LotType"]}'
 
@@ -59,14 +64,14 @@ def scrape(request):
     if request.method != "POST":
         return JsonResponse({'message': 'Endpoint accessed incorrectly.'})
 
-    logger.info('Starting data scraper')
+    print('Starting data scraper')
 
     for skip_rows in range(0, 10000, 500):
         # used a for loop to prevent infinite loops, and also elegantly iterate the skip_rows variable
 
         # call API
         request_time = int(time.time())
-        logger.info(f'Calling {API_URL}?$skip={skip_rows}')
+        print(f'Calling {API_URL}?$skip={skip_rows}')
         response = requests.get(f'{API_URL}?$skip={skip_rows}', headers={"AccountKey": LTA_ACCOUNT_KEY})
 
         # only proceed if response is successful
@@ -74,7 +79,7 @@ def scrape(request):
             api_data = response.json()["value"]
 
             # if we got data, then save it. Otherwise, stop the loop
-            logger.debug(f"rows in response: {len(api_data)}")
+            print(f"rows in response: {len(api_data)}")
 
             if len(api_data) == 0:
                 rows_remaining_flag = False
@@ -86,7 +91,7 @@ def scrape(request):
                 # make the carpark dict
                 loc_str = carpark["Location"].split()
                 carpark_dict = {
-                    "id": carpark_id(carpark),
+                    "id": make_carpark_id(carpark),
                     "car_park_id": carpark["CarParkID"],
                     "area": carpark["Area"],
                     "development": carpark["Development"],
@@ -99,18 +104,18 @@ def scrape(request):
                 # add the carpark to the db if it is new
                 try:
                     # get the matching one from DB, if it exists.
-                    carpark_db = Carpark.objects.get(id=carpark_id(carpark)).__dict__
+                    carpark_db = Carpark.objects.get(id=make_carpark_id(carpark)).__dict__
                     carpark_db.pop('_state')  # remove extra things that the Model has
                     # Compare differences
                     if carpark_dict != carpark_db:
                         logger.error(
                             "New carpark data from API is different from database! Please take action to resolve.")
-                        logger.debug("Database version:")
-                        logger.debug(carpark_db)
-                        logger.debug("API version:")
-                        logger.debug(carpark_dict)
+                        print("Database version:")
+                        print(carpark_db)
+                        print("API version:")
+                        print(carpark_dict)
                 except Carpark.DoesNotExist:
-                    logger.warning(f"Carpark ID {carpark_id(carpark)} not found, adding it to DB.")
+                    logger.warning(f"Carpark ID {make_carpark_id(carpark)} not found, adding it to DB.")
 
                     # try to save the Carpark object
                     serializer = CarparkSerializer(data=carpark_dict)
@@ -118,12 +123,12 @@ def scrape(request):
                         serializer.save()
                     else:
                         logger.error(f"Error with saving Carpark to database. Serializer error: {serializer.errors}")
-                        logger.debug(carpark)
-                        logger.debug(carpark_dict)
+                        print(carpark)
+                        print(carpark_dict)
 
                 # make the carparkData dict
                 carpark_data_dict = {
-                    "carpark_id": carpark_id(carpark),
+                    "carpark_id": make_carpark_id(carpark),
                     "available_lots": carpark["AvailableLots"],
                     "timestamp": datetime.datetime.utcfromtimestamp(request_time)
                 }
@@ -133,11 +138,127 @@ def scrape(request):
                     serializer.save()
                 else:
                     logger.error(f"Error with saving CarparkData to database. Serializer error: {serializer.errors}")
-                    logger.debug(carpark)
-                    logger.debug(carpark_dict)
+                    print(carpark)
+                    print(carpark_dict)
         else:
             logger.error(f"API was not reached. Status code: {response.status_code}")
 
-    logger.info("Data scraping complete")
+    print("Data scraping complete")
 
     return JsonResponse({'message': 'You have reached the data scraper endpoint.'})
+
+
+@csrf_exempt
+@transaction.atomic
+def transform_to_sql(request):
+    """transform the entire MongoDB into PostgreSQL
+
+    - this will append to the PostgreSQL.
+    - ignore any potential changes in Carpark, just take the metadata from the first instance
+    """
+    if request.method != "POST":
+        return JsonResponse({'message': 'Endpoint accessed incorrectly.'})
+
+    return JsonResponse({'message': 'Transform to SQL endpoint is disabled for now.'})
+
+    print("Starting Transform to SQL")
+
+    # build the SQL objects in memory
+
+    ## init data structures (lists of objects)
+    data_model_list = []
+    carpark_id_list = list(Carpark.objects.values_list('id', flat=True))
+
+    ## get mongoDB data
+    client = MongoClient(MONGODB_URI)
+    db = client.car_park_when_sg
+    num_responses = db.api_responses.count_documents({})
+
+    print(f'API responses retrieved: {num_responses}')
+
+    data_insert_query = "INSERT INTO car_park_data_handler_carparkdata (carpark_id, available_lots, timestamp) VALUES "
+
+    ## iterate thru each doc in the MongoDB collection, and for each one...
+
+    for index, doc in enumerate(db.api_responses.find()):
+
+        print(f'working on {index}')
+
+        # iterate thru each carpark in this snapshot
+        for carpark in doc["data"]:
+            ### (do the same as the scraper)
+
+            # make the carpark dict
+            loc_str = carpark["Location"].split()
+            carpark_to_add = Carpark(
+                id=make_carpark_id(carpark),
+                car_park_id=carpark["CarParkID"],
+                area=carpark["Area"],
+                development=carpark["Development"],
+                location_lat=float(loc_str[0]),
+                location_lon=float(loc_str[1]),
+                lot_type=carpark["LotType"],
+                agency=carpark["Agency"]
+            )
+
+            # NEW VERSION (ignore potential changes, only check if ID exists)
+            if make_carpark_id(carpark) not in carpark_id_list:
+                logger.warning(f"Carpark ID {make_carpark_id(carpark)} not found, adding it to DB.")
+
+                # try to save the Carpark object
+                carpark_to_add.save()
+                carpark_id_list.append(make_carpark_id(carpark))
+
+            # # OLD VERSION FROM SCRAPER
+            # # add the carpark to the db if it is new
+            # try:
+            #     # get the matching one from DB, if it exists.
+            #     carpark_db = Carpark.objects.get(id=make_carpark_id(carpark)).__dict__
+            #     carpark_db.pop('_state')  # remove extra things that the Model has
+            #     # Compare differences
+            #     if carpark_dict != carpark_db:
+            #         logger.error(
+            #             "New carpark data from API is different from database! Please take action to resolve.")
+            #         print("Database version:")
+            #         print(carpark_db)
+            #         print("API version:")
+            #         print(carpark_dict)
+            # except Carpark.DoesNotExist:
+            #     logger.warning(f"Carpark ID {make_carpark_id(carpark)} not found, adding it to DB.")
+            #
+            #     # try to save the Carpark object
+            #     serializer = CarparkSerializer(data=carpark_dict)
+            #     if serializer.is_valid():
+            #         serializer.save()
+            #     else:
+            #         logger.error(f"Error with saving Carpark to database. Serializer error: {serializer.errors}")
+            #         print(carpark)
+            #         print(carpark_dict)
+
+            # make the carparkData dict
+            data_to_add = {
+                "carpark_id": make_carpark_id(carpark),
+                "available_lots": carpark["AvailableLots"],
+                "timestamp": datetime.datetime.utcfromtimestamp(doc['timestamp'])
+            }
+
+            data_model_list.append(data_to_add)
+            data_insert_query += f"('{make_carpark_id(carpark)}', '{carpark['AvailableLots']}', '{datetime.datetime.utcfromtimestamp(doc['timestamp'])}'), "
+
+            # for data_to_add in data_model_list:
+            #     cursor.execute(
+            #         "INSERT INTO car_park_data_handler_carparkdata (carpark_id, available_lots, timestamp) VALUES (%s, %s, %s)",
+            #         [make_carpark_id(carpark), carpark["AvailableLots"],
+            #          datetime.datetime.utcfromtimestamp(doc['timestamp'])])
+
+            ### create Carpark, if doesn't already exist (check against existing
+            ### create CarparkData
+            ### append to data structures
+
+            # write to the SQL database, using Django ORM
+            ## use bulk_create()
+
+    with connection.cursor() as cursor:
+        cursor.execute(data_insert_query[:-2])
+
+    return JsonResponse({'message': 'You have reached the Transform to SQL endpoint.'})

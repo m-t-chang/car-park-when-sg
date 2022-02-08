@@ -137,22 +137,26 @@ LOGGING = {
     'version': 1,  # the dictConfig format version
     'disable_existing_loggers': False,  # retain the default loggers
     'formatters': {
-        'verbose': {
-            'format': '{name} {levelname}:{message}',
+        'simple': {
+            'format': '{levelname} {message}',
             'style': '{',
         },
     },
     'handlers': {
-        'basic': {
+        'console': {
             'class': 'logging.StreamHandler',
-            'stream': sys.stdout,
-            'formatter': 'verbose'
+            'level': 'INFO',
+            'formatter': 'simple',
         }
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
     },
     'loggers': {
         '': {
-            'level': 'DEBUG',
-            'handlers': ['basic'],
+            'level': 'INFO',
+            'handlers': ['console'],
         }
     }
 }
