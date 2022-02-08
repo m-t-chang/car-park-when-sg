@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'restful_apis_with_jwt',
     'car_park_data_handler',
+    'user_management',
 ]
 
 MIDDLEWARE = [
@@ -160,6 +161,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ]
+}
+
+# add the custom account
+AUTH_USER_MODEL = 'user_management.Account'
+AUTHENTICATION_BACKENDS = {
+    'django.contrib.auth.backends.AllowAllUsersModelBackend',
+    'user_management.backends.CaseInsensitiveModelBackend'
 }
 
 SIMPLE_JWT = {
