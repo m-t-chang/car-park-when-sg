@@ -1,3 +1,4 @@
+import django.db.utils
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
@@ -6,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from car_park_data_handler.serializers import CarparkSerializer
 from car_park_data_handler.models import Carpark
+from user_management.models import Account
+import json
 
 
 # this is overriding the default, in order to add custom claims
@@ -35,3 +38,16 @@ class CarparkList(APIView):
         serializer = CarparkSerializer(carparks, many=True)
 
         return Response(serializer.data)
+
+
+class UserAddNew(APIView):
+    def post(self, request):
+        requestBody = json.loads(request.body)
+
+        try:
+            user = Account.objects.create_user(requestBody["email"], requestBody["password"])
+            user.save()
+        except django.db.utils.IntegrityError as err:
+            return Response({"message": "User already exists with that email!", "email": requestBody["email"]})
+
+        return Response({"message": "New user successfully created.", "email": requestBody["email"]})

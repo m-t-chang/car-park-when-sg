@@ -22,5 +22,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('data/', include('car_park_data_handler.urls')),
     path('api/', include('restful_apis_with_jwt.urls')),
-    path('accounts/', include('django.contrib.auth.urls'))
 ]
