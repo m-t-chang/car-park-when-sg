@@ -1,4 +1,5 @@
 from django.db import models
+from user_management.models import Account
 
 
 # Create your models here.
@@ -28,3 +29,11 @@ class CarparkData(models.Model):
 
     def __str__(self):
         return self.car_park_id + " at " + self.timestamp
+
+# # table for many to many relationship btwn Carparks and Accounts
+# class CarparkFavorites(models.Model):
+#     account = models.ForeignKey(Account, on_delete=models.CASCADE)
+#     carpark = models.ForeignKey(Carpark, on_delete=models.CASCADE)
+#
+#     def __str__(self):
+#         return self.account + " likes " + self.carpark
