@@ -44,10 +44,15 @@ class UserAddNew(APIView):
     def post(self, request):
         requestBody = json.loads(request.body)
 
+        # validate the email is an email!
+
         try:
             user = Account.objects.create_user(requestBody["email"], requestBody["password"])
             user.save()
         except django.db.utils.IntegrityError as err:
-            return Response({"message": "User already exists with that email!", "email": requestBody["email"]})
+            return Response(
+                {"status": "fail", "message": "User already exists with that email! Please log in",
+                 "email": requestBody["email"]})
 
-        return Response({"message": "New user successfully created.", "email": requestBody["email"]})
+        return Response(
+            {"status": "success", "message": "New user successfully created.", "email": requestBody["email"]})
