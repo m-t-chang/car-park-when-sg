@@ -11,6 +11,7 @@ urlpatterns = [
 
     # user management
     path('user/signup/', views.UserAddNew.as_view(), name='user_add_new'),
+    path('user/info/', views.UserInfo.as_view(), name='user_info'),
 
     # data
     path('carpark-list/', views.CarparkList.as_view()),

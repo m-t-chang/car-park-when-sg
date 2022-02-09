@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from car_park_data_handler.serializers import CarparkSerializer, CarparkDataSerializer
 from car_park_data_handler.models import Carpark, CarparkData
+from user_management.serializers import AccountSerializer
 from user_management.models import Account
 import json
 
@@ -43,6 +44,26 @@ class UserAddNew(APIView):
 
         return Response(
             {"status": "success", "message": "New user successfully created.", "email": requestBody["email"]})
+
+
+class UserInfo(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        serializer = AccountSerializer(request.user)
+        return Response(serializer.data)
+
+    def put(self, request):
+        serializer = AccountSerializer(request.user)
+        return Response(serializer.data)
+
+    def delete(self, request):
+        if request.user.is_superuser:
+            return Response(
+                {"status": "failure", "message": "Cannot delete superuser this way.", "email": request.user.email})
+        
+        serializer = AccountSerializer(request.user)
+        return Response(serializer.data)
 
 
 # APIs for frontend
