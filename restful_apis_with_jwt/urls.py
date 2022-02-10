@@ -16,4 +16,5 @@ urlpatterns = [
     # data
     path('carpark-list/', views.CarparkList.as_view()),
     path('carpark-detail/<str:carpark_id>/', views.CarparkDetail.as_view()),
+    path('carpark-hourly-avg/<str:carpark_id>/', views.CarparkHourlyAverage.as_view()),
 ]

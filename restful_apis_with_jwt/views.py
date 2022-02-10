@@ -1,4 +1,5 @@
 import django.db.utils
+from django.http import JsonResponse
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
@@ -10,6 +11,8 @@ from car_park_data_handler.models import Carpark, CarparkData
 from user_management.serializers import AccountSerializer
 from user_management.models import Account
 import json
+from django.db.models import Avg, DateTimeField
+from django.db.models.functions import ExtractHour, ExtractWeekDay
 
 
 # this is overriding the default, in order to add custom claims
@@ -99,3 +102,23 @@ class CarparkDetail(APIView):
                       "available_lots": list(data.values_list('available_lots', flat=True))}
 
         return Response(aggregated)
+
+
+class CarparkHourlyAverage(APIView):
+    """returns JSON with 7 keys, timestamp and available_lots, with value being an array for each"""
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, carpark_id):
+        data = CarparkData.objects.filter(carpark_id=carpark_id)
+
+        result = list(
+            data.annotate(weekday=ExtractWeekDay('timestamp')).annotate(hour=ExtractHour('timestamp')).values(
+                'weekday', 'hour').annotate(
+                Avg('available_lots')).order_by('weekday', 'hour'))
+        print(result)
+
+        aggregated = {"timestamp": list(data.values_list('timestamp', flat=True)),
+                      "available_lots": list(data.values_list('available_lots', flat=True))}
+
+        # result = [[1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6]]
+        return JsonResponse({"data": result})
