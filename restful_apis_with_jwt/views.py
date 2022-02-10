@@ -54,6 +54,13 @@ class UserInfo(APIView):
         return Response(serializer.data)
 
     def put(self, request):
+        print(request.data)
+
+        request.user.email = request.data["email"]
+        request.user.name = request.data["name"]
+        request.user.surname = request.data["surname"]
+        request.user.save()
+
         serializer = AccountSerializer(request.user)
         return Response(serializer.data)
 
@@ -65,7 +72,7 @@ class UserInfo(APIView):
         request.user.delete()
 
         # logout
-        
+
         return Response({"status": "success", "message": "User deleted.", "email": request.user.email})
 
 
