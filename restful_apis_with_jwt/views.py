@@ -61,9 +61,12 @@ class UserInfo(APIView):
         if request.user.is_superuser:
             return Response(
                 {"status": "failure", "message": "Cannot delete superuser this way.", "email": request.user.email})
+
+        request.user.delete()
+
+        # logout
         
-        serializer = AccountSerializer(request.user)
-        return Response(serializer.data)
+        return Response({"status": "success", "message": "User deleted.", "email": request.user.email})
 
 
 # APIs for frontend
