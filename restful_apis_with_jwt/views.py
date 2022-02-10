@@ -115,10 +115,5 @@ class CarparkHourlyAverage(APIView):
             data.annotate(weekday=ExtractWeekDay('timestamp')).annotate(hour=ExtractHour('timestamp')).values(
                 'weekday', 'hour').annotate(
                 Avg('available_lots')).order_by('weekday', 'hour'))
-        print(result)
 
-        aggregated = {"timestamp": list(data.values_list('timestamp', flat=True)),
-                      "available_lots": list(data.values_list('available_lots', flat=True))}
-
-        # result = [[1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6]]
         return JsonResponse({"data": result})
