@@ -16,15 +16,6 @@ if __name__ == '__main__':
     client = MongoClient(MONGODB_URI)
     db = client.car_park_when_sg
 
-    # scrape the API once
-    # PSEUDOCODE FOR SCRAPING
-    # Use MongoDB for rapid spin-up. I will try using multiple DB
-    #
-    #   I want to save the API output. And timestamp it.
-    #   Then have it run regularly on Heroku.
-    #
-    # I got MongoDB working!
-
     # call the api
     print("Calling API...")
     request_time = int(time.time())

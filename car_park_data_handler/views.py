@@ -209,32 +209,6 @@ def transform_to_sql(request):
                 carpark_to_add.save()
                 carpark_id_list.append(make_carpark_id(carpark))
 
-            # # OLD VERSION FROM SCRAPER
-            # # add the carpark to the db if it is new
-            # try:
-            #     # get the matching one from DB, if it exists.
-            #     carpark_db = Carpark.objects.get(id=make_carpark_id(carpark)).__dict__
-            #     carpark_db.pop('_state')  # remove extra things that the Model has
-            #     # Compare differences
-            #     if carpark_dict != carpark_db:
-            #         logger.error(
-            #             "New carpark data from API is different from database! Please take action to resolve.")
-            #         print("Database version:")
-            #         print(carpark_db)
-            #         print("API version:")
-            #         print(carpark_dict)
-            # except Carpark.DoesNotExist:
-            #     logger.warning(f"Carpark ID {make_carpark_id(carpark)} not found, adding it to DB.")
-            #
-            #     # try to save the Carpark object
-            #     serializer = CarparkSerializer(data=carpark_dict)
-            #     if serializer.is_valid():
-            #         serializer.save()
-            #     else:
-            #         logger.error(f"Error with saving Carpark to database. Serializer error: {serializer.errors}")
-            #         print(carpark)
-            #         print(carpark_dict)
-
             # make the carparkData dict
             data_to_add = {
                 "carpark_id": make_carpark_id(carpark),
@@ -244,19 +218,6 @@ def transform_to_sql(request):
 
             data_model_list.append(data_to_add)
             data_insert_query += f"('{make_carpark_id(carpark)}', '{carpark['AvailableLots']}', '{datetime.datetime.utcfromtimestamp(doc['timestamp'])}'), "
-
-            # for data_to_add in data_model_list:
-            #     cursor.execute(
-            #         "INSERT INTO car_park_data_handler_carparkdata (carpark_id, available_lots, timestamp) VALUES (%s, %s, %s)",
-            #         [make_carpark_id(carpark), carpark["AvailableLots"],
-            #          datetime.datetime.utcfromtimestamp(doc['timestamp'])])
-
-            ### create Carpark, if doesn't already exist (check against existing
-            ### create CarparkData
-            ### append to data structures
-
-            # write to the SQL database, using Django ORM
-            ## use bulk_create()
 
     with connection.cursor() as cursor:
         cursor.execute(data_insert_query[:-2])
