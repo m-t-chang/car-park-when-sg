@@ -159,7 +159,7 @@ def transform_to_sql(request):
     if request.method != "POST":
         return JsonResponse({'message': 'Endpoint accessed incorrectly.'})
 
-    return JsonResponse({'message': 'Transform to SQL endpoint is disabled for now.'})
+    # return JsonResponse({'message': 'Transform to SQL endpoint is disabled for now.'})
 
     print("Starting Transform to SQL")
 
