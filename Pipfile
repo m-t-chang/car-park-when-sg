@@ -8,10 +8,8 @@ requests = "*"
 python-dotenv = "*"
 pymongo = {extras = ["srv"], version = "*"}
 django = "*"
-psycopg2-binary = "*"
 djangorestframework = "*"
 gunicorn = "*"
-django-heroku = "*"
 djangorestframework-simplejwt = "*"
 django-cors-headers = "*"
 mysqlclient = "*"
@@ -20,4 +18,4 @@ sqlalchemy = "*"
 [dev-packages]
 
 [requires]
-python_version = "3.9"
+python_version = "3.9.6"
